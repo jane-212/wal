@@ -1,39 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
+  interface Video {
+    cover: string;
+    title: string;
+    time: string;
+    preview: string;
   }
 
+  interface Result {
+    videos: Video[];
+  }
+
+  const [videos, setVideos] = useState<Video[]>([]);
+
+  async function getVideos() {
+    invoke<Result>("get_videos")
+      .then((res) => {
+        setVideos(res.videos);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  let ignore = false;
+  useEffect(() => {
+    if (!ignore) {
+      getVideos();
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   return (
-    <div className="container">
-      <h1>Welcome to Tauri!</h1>
-
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-
-      <p>{greetMsg}</p>
-
-      <img src="https://i.rotriza.com/fc2-ppv-1200809/cover.jpg?class=thumbnail" />
+    <div>
+      {videos.map((video) => (
+        <div>
+          <img src={video.cover} />
+          <p>{video.title}</p>
+          <p>{video.time}</p>
+          <video width="320" height="240" controls>
+            <source src={video.preview} type="video/mp4" />
+          </video>
+          <video width="320" height="240" controls>
+            <source
+              src="https://ricodaniel.com/8f309e8e-3e33-4db1-b181-4213f20067ec/playlist.m3u8"
+              type="application/x-mpegURL"
+            />
+          </video>
+        </div>
+      ))}
     </div>
   );
 }
